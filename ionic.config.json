@@ -1,0 +1,7 @@
+{
+  "name": "capacitor-niimbot-printer-test",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular-standalone"
+}
