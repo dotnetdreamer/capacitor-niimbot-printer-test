@@ -68,67 +68,61 @@ export class PrinterService {
     // });
 
 
-    this._init();
+    const client = this._init();
       
 
-    // client.on('connect', (e) => {
-    //   console.log('onConnect');
-    //   this.heartbeatFails.next(0);
-    //   this.connectionState.next('connected');
-    //   this.connectedPrinterName.next(e.info.deviceName ?? 'unknown');
-    // });
+    client.on('connect', (e) => {
+      console.log('onConnect');
+      this.heartbeatFails.next(0);
+      this.connectionState.next('connected');
+      this.connectedPrinterName.next(e.info.deviceName ?? 'unknown');
+    });
 
-      // client.on('packetsent', (e) => {
-      //   console.log(`>> ${Utils.bufToHex(e.packet.toBytes())} (${RequestCommandId[e.packet.command]})`);
-      // });
+      client.on('packetsent', (e) => {
+        console.log(`>> ${Utils.bufToHex(e.packet.toBytes())} (${RequestCommandId[e.packet.command]})`);
+      });
 
-      // client.on('packetreceived', (e) => {
-      //   console.log(`<< ${Utils.bufToHex(e.packet.toBytes())} (${ResponseCommandId[e.packet.command]})`);
-      // });
+      client.on('packetreceived', (e) => {
+        console.log(`<< ${Utils.bufToHex(e.packet.toBytes())} (${ResponseCommandId[e.packet.command]})`);
+      });
 
-      // client.on('connect', (e) => {
-      //   console.log('onConnect');
-      //   this.heartbeatFails.next(0);
-      //   this.connectionState.next('connected');
-      //   this.connectedPrinterName.next(e.info.deviceName ?? 'unknown');
-      // });
+    
+      client.on('printerinfofetched', (e) => {
+        console.log('printerInfoFetched', e);
+        this.printerInfo.next(e.info);
+        if (client) {
+          this.printerMeta.next(client.getModelMetadata());
+        }
+      });
 
-      // client.on('printerinfofetched', (e) => {
-      //   console.log('printerInfoFetched');
-      //   this.printerInfo.next(e.info);
-      //   if (client) {
-      //     this.printerMeta.next(client.getModelMetadata());
-      //   }
-      // });
+      client.on('disconnect', () => {
+        console.log('onDisconnect');
+        this.connectionState.next('disconnected');
+        this.connectedPrinterName.next('');
+        this.printerInfo.next(undefined);
+        this.printerMeta.next(undefined);
+      });
 
-      // client.on('disconnect', () => {
-      //   console.log('onDisconnect');
-      //   this.connectionState.next('disconnected');
-      //   this.connectedPrinterName.next('');
-      //   this.printerInfo.next(undefined);
-      //   this.printerMeta.next(undefined);
-      // });
+      client.on('heartbeat', (e) => {
+        console.log('heartbeat', e.data);
 
-      // client.on('heartbeat', (e) => {
-      //   console.log('heartbeat', e.data);
+        this.heartbeatFails.next(0);
+        this.heartbeatData.next(e.data);
+      });
 
-      //   this.heartbeatFails.next(0);
-      //   this.heartbeatData.next(e.data);
-      // });
+      client.on('heartbeatfailed', (e) => {
+        console.log('heartbeatFailed', e.failedAttempts); 
+        const maxFails = 5;
+        this.heartbeatFails.next(e.failedAttempts);
 
-      // client.on('heartbeatfailed', (e) => {
-      //   console.log('heartbeatFailed', e.failedAttempts); 
-      //   const maxFails = 5;
-      //   this.heartbeatFails.next(e.failedAttempts);
-
-      //   console.warn(`Heartbeat failed ${e.failedAttempts}/${maxFails}`);
-      //   if (e.failedAttempts >= maxFails) {
-      //   //   Toasts.error(tr('connector.disconnect.heartbeat'));
-      //     if (client) {
-      //       client.disconnect();
-      //     }
-      //   }
-      // });
+        console.warn(`Heartbeat failed ${e.failedAttempts}/${maxFails}`);
+        if (e.failedAttempts >= maxFails) {
+        //   Toasts.error(tr('connector.disconnect.heartbeat'));
+          if (client) {
+            client.disconnect();
+          }
+        }
+      });
 
 
     // this._printerClient.next(client);
